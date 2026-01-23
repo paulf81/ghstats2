@@ -1,0 +1,12 @@
+# Repository configuration for ghstats2
+# Add or remove repos by editing this file
+
+defaults:
+  owner: NatLabRockies
+
+repos:
+  - name: floris
+  - name: flasc
+  - name: hercules
+  - name: hycon
+  - name: ROSCO

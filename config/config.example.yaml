@@ -1,0 +1,15 @@
+# ghstats2 configuration
+# Copy this file to config.yaml and fill in your values
+# DO NOT commit config.yaml - it contains secrets
+
+github:
+  # Personal access token with 'repo' scope
+  # Generate at: https://github.com/settings/tokens
+  token: "ghp_your_token_here"
+
+# Future: Google Analytics configuration
+# google_analytics:
+#   credentials_file: "config/ga_credentials.json"
+#   properties:
+#     floris: "123456789"
+#     flasc: "234567890"
