@@ -5,7 +5,134 @@ from pathlib import Path
 
 import polars as pl
 
-HTML_TEMPLATE = """<!DOCTYPE html>
+
+def generate_dashboard(df: pl.DataFrame, output_path: str | Path) -> None:
+    """Generate HTML dashboard from statistics DataFrame.
+
+    Args:
+        df: Statistics DataFrame with columns: date, repo_name, views_total, etc.
+        output_path: Path to write HTML file.
+    """
+    import json
+
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    repos = df["repo_name"].unique().sort().to_list()
+
+    # Calculate per-repo summaries
+    summary = (
+        df.group_by("repo_name")
+        .agg(
+            [
+                pl.col("views_total").sum().alias("views_total"),
+                pl.col("views_unique").sum().alias("views_unique"),
+                pl.col("clones_total").sum().alias("clones_total"),
+                pl.col("clones_unique").sum().alias("clones_unique"),
+            ]
+        )
+        .sort("repo_name")
+    )
+
+    # Build per-repo cards HTML
+    cards_html = ""
+    for repo in repos:
+        repo_stats = summary.filter(pl.col("repo_name") == repo)
+        views_total = repo_stats["views_total"][0] or 0
+        views_unique = repo_stats["views_unique"][0] or 0
+        clones_total = repo_stats["clones_total"][0] or 0
+        clones_unique = repo_stats["clones_unique"][0] or 0
+
+        cards_html += f"""
+        <div class="repo-section">
+            <h2 class="repo-title">{repo}</h2>
+            <div class="cards">
+                <div class="card">
+                    <h3>Total Views</h3>
+                    <div class="value">{views_total:,}</div>
+                </div>
+                <div class="card">
+                    <h3>Unique Views</h3>
+                    <div class="value">{views_unique:,}</div>
+                </div>
+                <div class="card">
+                    <h3>Total Clones</h3>
+                    <div class="value">{clones_total:,}</div>
+                </div>
+                <div class="card">
+                    <h3>Unique Clones</h3>
+                    <div class="value">{clones_unique:,}</div>
+                </div>
+            </div>
+        </div>
+        """
+
+    # Build per-repo chart containers
+    charts_html = ""
+    for repo in repos:
+        safe_id = repo.replace("-", "_").replace(".", "_")
+        charts_html += f"""
+        <div class="repo-charts">
+            <h2 class="repo-title">{repo}</h2>
+            <div class="charts-row">
+                <div class="chart-container">
+                    <div id="views-{safe_id}" class="chart"></div>
+                </div>
+                <div class="chart-container">
+                    <div id="clones-{safe_id}" class="chart"></div>
+                </div>
+            </div>
+        </div>
+        """
+
+    # Build per-repo chart JavaScript
+    charts_js = ""
+    for repo in repos:
+        safe_id = repo.replace("-", "_").replace(".", "_")
+        repo_df = df.filter(pl.col("repo_name") == repo).sort("date")
+        dates = repo_df["date"].cast(pl.Utf8).to_list()
+        views_unique = repo_df["views_unique"].fill_null(0).to_list()
+        clones_unique = repo_df["clones_unique"].fill_null(0).to_list()
+
+        views_trace = [
+            {
+                "x": dates,
+                "y": views_unique,
+                "type": "scatter",
+                "mode": "lines+markers",
+                "name": "Unique Views",
+                "line": {"color": "#636EFA"},
+            }
+        ]
+
+        clones_trace = [
+            {
+                "x": dates,
+                "y": clones_unique,
+                "type": "scatter",
+                "mode": "lines+markers",
+                "name": "Unique Clones",
+                "line": {"color": "#EF553B"},
+            }
+        ]
+
+        charts_js += f"""
+        Plotly.newPlot('views-{safe_id}', {json.dumps(views_trace)}, {{
+            title: 'Daily Views',
+            xaxis: {{ title: 'Date' }},
+            yaxis: {{ title: 'Unique Views' }},
+            margin: {{ t: 40, r: 20 }}
+        }});
+
+        Plotly.newPlot('clones-{safe_id}', {json.dumps(clones_trace)}, {{
+            title: 'Daily Clones',
+            xaxis: {{ title: 'Date' }},
+            yaxis: {{ title: 'Unique Clones' }},
+            margin: {{ t: 40, r: 20 }}
+        }});
+        """
+
+    html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -32,203 +159,84 @@ HTML_TEMPLATE = """<!DOCTYPE html>
             color: #666;
             font-size: 14px;
         }}
+        .repo-section {{
+            margin-bottom: 30px;
+        }}
+        .repo-title {{
+            color: #333;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }}
         .cards {{
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
         }}
         .card {{
             background: white;
             border-radius: 8px;
-            padding: 20px;
+            padding: 15px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }}
         .card h3 {{
-            margin: 0 0 10px 0;
+            margin: 0 0 8px 0;
             color: #666;
-            font-size: 14px;
+            font-size: 12px;
             text-transform: uppercase;
         }}
         .card .value {{
-            font-size: 32px;
+            font-size: 24px;
             font-weight: bold;
             color: #333;
         }}
-        .charts {{
+        .repo-charts {{
+            margin-bottom: 40px;
+        }}
+        .charts-row {{
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            grid-template-columns: 1fr 1fr;
             gap: 20px;
         }}
         .chart-container {{
             background: white;
             border-radius: 8px;
-            padding: 20px;
+            padding: 15px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }}
         .chart {{
             width: 100%;
-            height: 400px;
+            height: 300px;
+        }}
+        @media (max-width: 900px) {{
+            .cards {{
+                grid-template-columns: repeat(2, 1fr);
+            }}
+            .charts-row {{
+                grid-template-columns: 1fr;
+            }}
         }}
     </style>
 </head>
 <body>
     <div class="header">
         <h1>GitHub Stats Dashboard</h1>
-        <p>Generated: {generated_at}</p>
+        <p>NatLabRockies Wind Energy Repositories</p>
+        <p>Generated: {datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")}</p>
     </div>
 
-    <div class="cards">
-        <div class="card">
-            <h3>Total Views</h3>
-            <div class="value">{total_views:,}</div>
-        </div>
-        <div class="card">
-            <h3>Unique Views</h3>
-            <div class="value">{unique_views:,}</div>
-        </div>
-        <div class="card">
-            <h3>Total Clones</h3>
-            <div class="value">{total_clones:,}</div>
-        </div>
-        <div class="card">
-            <h3>Unique Clones</h3>
-            <div class="value">{unique_clones:,}</div>
-        </div>
-    </div>
+    {cards_html}
 
-    <div class="charts">
-        <div class="chart-container">
-            <div id="views-chart" class="chart"></div>
-        </div>
-        <div class="chart-container">
-            <div id="clones-chart" class="chart"></div>
-        </div>
-        <div class="chart-container">
-            <div id="comparison-chart" class="chart"></div>
-        </div>
-    </div>
+    <h1 style="margin-top: 40px; color: #333;">Time Series</h1>
+
+    {charts_html}
 
     <script>
-        // Views time series
-        var viewsData = {views_data};
-        Plotly.newPlot('views-chart', viewsData, {{
-            title: 'Daily Views by Repository',
-            xaxis: {{ title: 'Date' }},
-            yaxis: {{ title: 'Views' }},
-            hovermode: 'x unified'
-        }});
-
-        // Clones time series
-        var clonesData = {clones_data};
-        Plotly.newPlot('clones-chart', clonesData, {{
-            title: 'Daily Clones by Repository',
-            xaxis: {{ title: 'Date' }},
-            yaxis: {{ title: 'Clones' }},
-            hovermode: 'x unified'
-        }});
-
-        // Comparison bar chart
-        var comparisonData = {comparison_data};
-        Plotly.newPlot('comparison-chart', comparisonData, {{
-            title: 'Repository Comparison (Total)',
-            barmode: 'group',
-            xaxis: {{ title: 'Repository' }},
-            yaxis: {{ title: 'Count' }}
-        }});
+        {charts_js}
     </script>
 </body>
 </html>
 """
-
-
-def generate_dashboard(df: pl.DataFrame, output_path: str | Path) -> None:
-    """Generate HTML dashboard from statistics DataFrame.
-
-    Args:
-        df: Statistics DataFrame with columns: date, repo_name, views_total, etc.
-        output_path: Path to write HTML file.
-    """
-    import json
-
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Calculate totals
-    total_views = df["views_total"].sum() or 0
-    unique_views = df["views_unique"].sum() or 0
-    total_clones = df["clones_total"].sum() or 0
-    unique_clones = df["clones_unique"].sum() or 0
-
-    # Prepare time series data for Plotly
-    repos = df["repo_name"].unique().sort().to_list()
-
-    views_traces = []
-    clones_traces = []
-
-    for repo in repos:
-        repo_df = df.filter(pl.col("repo_name") == repo).sort("date")
-        dates = repo_df["date"].cast(pl.Utf8).to_list()
-        views = repo_df["views_unique"].fill_null(0).to_list()
-        clones = repo_df["clones_unique"].fill_null(0).to_list()
-
-        views_traces.append(
-            {
-                "x": dates,
-                "y": views,
-                "type": "scatter",
-                "mode": "lines+markers",
-                "name": repo,
-            }
-        )
-
-        clones_traces.append(
-            {
-                "x": dates,
-                "y": clones,
-                "type": "scatter",
-                "mode": "lines+markers",
-                "name": repo,
-            }
-        )
-
-    # Comparison bar chart data
-    summary = (
-        df.group_by("repo_name")
-        .agg(
-            [
-                pl.col("views_total").sum().alias("views"),
-                pl.col("clones_total").sum().alias("clones"),
-            ]
-        )
-        .sort("repo_name")
-    )
-
-    comparison_data = [
-        {
-            "x": summary["repo_name"].to_list(),
-            "y": summary["views"].fill_null(0).to_list(),
-            "type": "bar",
-            "name": "Views",
-        },
-        {
-            "x": summary["repo_name"].to_list(),
-            "y": summary["clones"].fill_null(0).to_list(),
-            "type": "bar",
-            "name": "Clones",
-        },
-    ]
-
-    # Generate HTML
-    html = HTML_TEMPLATE.format(
-        generated_at=datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC"),
-        total_views=total_views,
-        unique_views=unique_views,
-        total_clones=total_clones,
-        unique_clones=unique_clones,
-        views_data=json.dumps(views_traces),
-        clones_data=json.dumps(clones_traces),
-        comparison_data=json.dumps(comparison_data),
-    )
 
     output_path.write_text(html)

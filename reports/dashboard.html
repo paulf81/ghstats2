@@ -25,110 +25,273 @@
             color: #666;
             font-size: 14px;
         }
+        .repo-section {
+            margin-bottom: 30px;
+        }
+        .repo-title {
+            color: #333;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
         .cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
         }
         .card {
             background: white;
             border-radius: 8px;
-            padding: 20px;
+            padding: 15px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .card h3 {
-            margin: 0 0 10px 0;
+            margin: 0 0 8px 0;
             color: #666;
-            font-size: 14px;
+            font-size: 12px;
             text-transform: uppercase;
         }
         .card .value {
-            font-size: 32px;
+            font-size: 24px;
             font-weight: bold;
             color: #333;
         }
-        .charts {
+        .repo-charts {
+            margin-bottom: 40px;
+        }
+        .charts-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
         .chart-container {
             background: white;
             border-radius: 8px;
-            padding: 20px;
+            padding: 15px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .chart {
             width: 100%;
-            height: 400px;
+            height: 300px;
+        }
+        @media (max-width: 900px) {
+            .cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>GitHub Stats Dashboard</h1>
-        <p>Generated: 2026-01-24 00:32 UTC</p>
+        <p>NatLabRockies Wind Energy Repositories</p>
+        <p>Generated: 2026-01-26 19:52 UTC</p>
     </div>
 
-    <div class="cards">
-        <div class="card">
-            <h3>Total Views</h3>
-            <div class="value">2,808</div>
+    
+        <div class="repo-section">
+            <h2 class="repo-title">flasc</h2>
+            <div class="cards">
+                <div class="card">
+                    <h3>Total Views</h3>
+                    <div class="value">208</div>
+                </div>
+                <div class="card">
+                    <h3>Unique Views</h3>
+                    <div class="value">50</div>
+                </div>
+                <div class="card">
+                    <h3>Total Clones</h3>
+                    <div class="value">86</div>
+                </div>
+                <div class="card">
+                    <h3>Unique Clones</h3>
+                    <div class="value">68</div>
+                </div>
+            </div>
         </div>
-        <div class="card">
-            <h3>Unique Views</h3>
-            <div class="value">699</div>
+        
+        <div class="repo-section">
+            <h2 class="repo-title">floris</h2>
+            <div class="cards">
+                <div class="card">
+                    <h3>Total Views</h3>
+                    <div class="value">2,446</div>
+                </div>
+                <div class="card">
+                    <h3>Unique Views</h3>
+                    <div class="value">592</div>
+                </div>
+                <div class="card">
+                    <h3>Total Clones</h3>
+                    <div class="value">313</div>
+                </div>
+                <div class="card">
+                    <h3>Unique Clones</h3>
+                    <div class="value">97</div>
+                </div>
+            </div>
         </div>
-        <div class="card">
-            <h3>Total Clones</h3>
-            <div class="value">462</div>
+        
+        <div class="repo-section">
+            <h2 class="repo-title">hercules</h2>
+            <div class="cards">
+                <div class="card">
+                    <h3>Total Views</h3>
+                    <div class="value">93</div>
+                </div>
+                <div class="card">
+                    <h3>Unique Views</h3>
+                    <div class="value">26</div>
+                </div>
+                <div class="card">
+                    <h3>Total Clones</h3>
+                    <div class="value">36</div>
+                </div>
+                <div class="card">
+                    <h3>Unique Clones</h3>
+                    <div class="value">19</div>
+                </div>
+            </div>
         </div>
-        <div class="card">
-            <h3>Unique Clones</h3>
-            <div class="value">200</div>
+        
+        <div class="repo-section">
+            <h2 class="repo-title">hycon</h2>
+            <div class="cards">
+                <div class="card">
+                    <h3>Total Views</h3>
+                    <div class="value">61</div>
+                </div>
+                <div class="card">
+                    <h3>Unique Views</h3>
+                    <div class="value">31</div>
+                </div>
+                <div class="card">
+                    <h3>Total Clones</h3>
+                    <div class="value">27</div>
+                </div>
+                <div class="card">
+                    <h3>Unique Clones</h3>
+                    <div class="value">16</div>
+                </div>
+            </div>
         </div>
-    </div>
+        
 
-    <div class="charts">
-        <div class="chart-container">
-            <div id="views-chart" class="chart"></div>
+    <h1 style="margin-top: 40px; color: #333;">Time Series</h1>
+
+    
+        <div class="repo-charts">
+            <h2 class="repo-title">flasc</h2>
+            <div class="charts-row">
+                <div class="chart-container">
+                    <div id="views-flasc" class="chart"></div>
+                </div>
+                <div class="chart-container">
+                    <div id="clones-flasc" class="chart"></div>
+                </div>
+            </div>
         </div>
-        <div class="chart-container">
-            <div id="clones-chart" class="chart"></div>
+        
+        <div class="repo-charts">
+            <h2 class="repo-title">floris</h2>
+            <div class="charts-row">
+                <div class="chart-container">
+                    <div id="views-floris" class="chart"></div>
+                </div>
+                <div class="chart-container">
+                    <div id="clones-floris" class="chart"></div>
+                </div>
+            </div>
         </div>
-        <div class="chart-container">
-            <div id="comparison-chart" class="chart"></div>
+        
+        <div class="repo-charts">
+            <h2 class="repo-title">hercules</h2>
+            <div class="charts-row">
+                <div class="chart-container">
+                    <div id="views-hercules" class="chart"></div>
+                </div>
+                <div class="chart-container">
+                    <div id="clones-hercules" class="chart"></div>
+                </div>
+            </div>
         </div>
-    </div>
+        
+        <div class="repo-charts">
+            <h2 class="repo-title">hycon</h2>
+            <div class="charts-row">
+                <div class="chart-container">
+                    <div id="views-hycon" class="chart"></div>
+                </div>
+                <div class="chart-container">
+                    <div id="clones-hycon" class="chart"></div>
+                </div>
+            </div>
+        </div>
+        
 
     <script>
-        // Views time series
-        var viewsData = [{"x": ["2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22"], "y": [7, 2, 4, 6, 4, 3, 3, 2, 3, 1, 1, 5, 3, 6], "type": "scatter", "mode": "lines+markers", "name": "flasc"}, {"x": ["2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22"], "y": [42, 25, 27, 51, 29, 73, 50, 41, 14, 23, 60, 43, 43, 71], "type": "scatter", "mode": "lines+markers", "name": "floris"}, {"x": ["2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22"], "y": [1, 2, 1, 2, 1, 2, 4, 5, 0, 0, 1, 4, 1, 2], "type": "scatter", "mode": "lines+markers", "name": "hercules"}, {"x": ["2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22"], "y": [1, 1, 1, 4, 3, 4, 4, 4, 0, 0, 1, 2, 5, 1], "type": "scatter", "mode": "lines+markers", "name": "hycon"}];
-        Plotly.newPlot('views-chart', viewsData, {
-            title: 'Daily Views by Repository',
+        
+        Plotly.newPlot('views-flasc', [{"x": ["2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22"], "y": [7, 2, 4, 6, 4, 3, 3, 2, 3, 1, 1, 5, 3, 6], "type": "scatter", "mode": "lines+markers", "name": "Unique Views", "line": {"color": "#636EFA"}}], {
+            title: 'Daily Views',
             xaxis: { title: 'Date' },
-            yaxis: { title: 'Views' },
-            hovermode: 'x unified'
+            yaxis: { title: 'Unique Views' },
+            margin: { t: 40, r: 20 }
         });
 
-        // Clones time series
-        var clonesData = [{"x": ["2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22"], "y": [6, 0, 0, 3, 6, 1, 6, 3, 1, 1, 9, 8, 9, 15], "type": "scatter", "mode": "lines+markers", "name": "flasc"}, {"x": ["2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22"], "y": [26, 4, 2, 9, 2, 9, 6, 3, 7, 3, 3, 3, 9, 11], "type": "scatter", "mode": "lines+markers", "name": "floris"}, {"x": ["2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22"], "y": [0, 0, 0, 1, 0, 0, 1, 10, 2, 0, 0, 1, 3, 1], "type": "scatter", "mode": "lines+markers", "name": "hercules"}, {"x": ["2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22"], "y": [0, 0, 1, 2, 1, 0, 4, 1, 1, 2, 0, 2, 1, 1], "type": "scatter", "mode": "lines+markers", "name": "hycon"}];
-        Plotly.newPlot('clones-chart', clonesData, {
-            title: 'Daily Clones by Repository',
+        Plotly.newPlot('clones-flasc', [{"x": ["2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22"], "y": [6, 0, 0, 3, 6, 1, 6, 3, 1, 1, 9, 8, 9, 15], "type": "scatter", "mode": "lines+markers", "name": "Unique Clones", "line": {"color": "#EF553B"}}], {
+            title: 'Daily Clones',
             xaxis: { title: 'Date' },
-            yaxis: { title: 'Clones' },
-            hovermode: 'x unified'
+            yaxis: { title: 'Unique Clones' },
+            margin: { t: 40, r: 20 }
+        });
+        
+        Plotly.newPlot('views-floris', [{"x": ["2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22"], "y": [42, 25, 27, 51, 29, 73, 50, 41, 14, 23, 60, 43, 43, 71], "type": "scatter", "mode": "lines+markers", "name": "Unique Views", "line": {"color": "#636EFA"}}], {
+            title: 'Daily Views',
+            xaxis: { title: 'Date' },
+            yaxis: { title: 'Unique Views' },
+            margin: { t: 40, r: 20 }
         });
 
-        // Comparison bar chart
-        var comparisonData = [{"x": ["flasc", "floris", "hercules", "hycon"], "y": [208, 2446, 93, 61], "type": "bar", "name": "Views"}, {"x": ["flasc", "floris", "hercules", "hycon"], "y": [86, 313, 36, 27], "type": "bar", "name": "Clones"}];
-        Plotly.newPlot('comparison-chart', comparisonData, {
-            title: 'Repository Comparison (Total)',
-            barmode: 'group',
-            xaxis: { title: 'Repository' },
-            yaxis: { title: 'Count' }
+        Plotly.newPlot('clones-floris', [{"x": ["2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22"], "y": [26, 4, 2, 9, 2, 9, 6, 3, 7, 3, 3, 3, 9, 11], "type": "scatter", "mode": "lines+markers", "name": "Unique Clones", "line": {"color": "#EF553B"}}], {
+            title: 'Daily Clones',
+            xaxis: { title: 'Date' },
+            yaxis: { title: 'Unique Clones' },
+            margin: { t: 40, r: 20 }
         });
+        
+        Plotly.newPlot('views-hercules', [{"x": ["2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22"], "y": [1, 2, 1, 2, 1, 2, 4, 5, 0, 0, 1, 4, 1, 2], "type": "scatter", "mode": "lines+markers", "name": "Unique Views", "line": {"color": "#636EFA"}}], {
+            title: 'Daily Views',
+            xaxis: { title: 'Date' },
+            yaxis: { title: 'Unique Views' },
+            margin: { t: 40, r: 20 }
+        });
+
+        Plotly.newPlot('clones-hercules', [{"x": ["2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22"], "y": [0, 0, 0, 1, 0, 0, 1, 10, 2, 0, 0, 1, 3, 1], "type": "scatter", "mode": "lines+markers", "name": "Unique Clones", "line": {"color": "#EF553B"}}], {
+            title: 'Daily Clones',
+            xaxis: { title: 'Date' },
+            yaxis: { title: 'Unique Clones' },
+            margin: { t: 40, r: 20 }
+        });
+        
+        Plotly.newPlot('views-hycon', [{"x": ["2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22"], "y": [1, 1, 1, 4, 3, 4, 4, 4, 0, 0, 1, 2, 5, 1], "type": "scatter", "mode": "lines+markers", "name": "Unique Views", "line": {"color": "#636EFA"}}], {
+            title: 'Daily Views',
+            xaxis: { title: 'Date' },
+            yaxis: { title: 'Unique Views' },
+            margin: { t: 40, r: 20 }
+        });
+
+        Plotly.newPlot('clones-hycon', [{"x": ["2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-18", "2026-01-19", "2026-01-20", "2026-01-21", "2026-01-22"], "y": [0, 0, 1, 2, 1, 0, 4, 1, 1, 2, 0, 2, 1, 1], "type": "scatter", "mode": "lines+markers", "name": "Unique Clones", "line": {"color": "#EF553B"}}], {
+            title: 'Daily Clones',
+            xaxis: { title: 'Date' },
+            yaxis: { title: 'Unique Clones' },
+            margin: { t: 40, r: 20 }
+        });
+        
     </script>
 </body>
 </html>
