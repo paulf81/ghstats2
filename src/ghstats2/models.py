@@ -82,3 +82,18 @@ class RepoStats:
     stargazers_count: int
     watchers_count: int
     open_issues_count: int
+
+
+@dataclass
+class Release:
+    """GitHub release information.
+
+    Attributes:
+        tag_name: Release version tag (e.g., "v1.0.0").
+        published_at: When the release was published.
+        name: Release title (may be empty).
+    """
+
+    tag_name: str
+    published_at: date
+    name: str = ""

@@ -113,6 +113,28 @@ def show(ctx: click.Context, repo: str | None, days: int) -> None:
     console.print(table)
 
 
+async def _fetch_releases(settings, repos: list) -> dict:
+    """Fetch releases for all configured repos."""
+    from ghstats2.github_client import GitHubTrafficClient
+    from ghstats2.models import Release
+
+    releases: dict[str, list[Release]] = {}
+
+    if not settings.github_token:
+        return releases
+
+    async with GitHubTrafficClient(settings.github_token) as client:
+        for repo in repos:
+            try:
+                repo_releases = await client.get_releases(repo.owner, repo.name)
+                releases[repo.name] = repo_releases
+            except Exception:
+                # Skip repos where we can't fetch releases
+                pass
+
+    return releases
+
+
 @main.command()
 @click.option(
     "--format",
@@ -122,13 +144,15 @@ def show(ctx: click.Context, repo: str | None, days: int) -> None:
     default="html",
 )
 @click.option("--output", "-o", type=click.Path(), help="Output file path")
+@click.option("--no-releases", is_flag=True, help="Skip fetching release markers")
 @click.pass_context
-def report(ctx: click.Context, output_format: str, output: str | None) -> None:
+def report(ctx: click.Context, output_format: str, output: str | None, no_releases: bool) -> None:
     """Generate statistics report.
 
     Examples:
         ghstats2 report                           # HTML dashboard
         ghstats2 report -f csv -o export.csv      # CSV export
+        ghstats2 report --no-releases             # Skip release markers
     """
     settings = get_settings()
     storage = StatsStorage(settings.data_dir / "stats.parquet")
@@ -153,8 +177,15 @@ def report(ctx: click.Context, output_format: str, output: str | None) -> None:
         # HTML report
         from ghstats2.report import generate_dashboard
 
+        releases = {}
+        if not no_releases:
+            repos = settings.load_repos()
+            if repos and settings.github_token:
+                console.print("[dim]Fetching release data...[/dim]")
+                releases = asyncio.run(_fetch_releases(settings, repos))
+
         output_path = output or "reports/dashboard.html"
-        generate_dashboard(df, output_path)
+        generate_dashboard(df, output_path, releases=releases)
         console.print(f"[green]Generated dashboard at {output_path}[/green]")
 
 

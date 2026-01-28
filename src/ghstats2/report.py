@@ -5,20 +5,32 @@ from pathlib import Path
 
 import polars as pl
 
+from ghstats2.models import Release
 
-def generate_dashboard(df: pl.DataFrame, output_path: str | Path) -> None:
+
+def generate_dashboard(
+    df: pl.DataFrame,
+    output_path: str | Path,
+    releases: dict[str, list[Release]] | None = None,
+) -> None:
     """Generate HTML dashboard from statistics DataFrame.
 
     Args:
         df: Statistics DataFrame with columns: date, repo_name, views_total, etc.
         output_path: Path to write HTML file.
+        releases: Optional dict mapping repo_name to list of Release objects.
     """
     import json
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    releases = releases or {}
     repos = df["repo_name"].unique().sort().to_list()
+
+    # Get date range from data for filtering releases
+    min_date = df["date"].min()
+    max_date = df["date"].max()
 
     # Calculate per-repo summaries
     summary = (
@@ -116,20 +128,64 @@ def generate_dashboard(df: pl.DataFrame, output_path: str | Path) -> None:
             }
         ]
 
-        charts_js += f"""
-        Plotly.newPlot('views-{safe_id}', {json.dumps(views_trace)}, {{
-            title: 'Daily Views',
-            xaxis: {{ title: 'Date' }},
-            yaxis: {{ title: 'Unique Views' }},
-            margin: {{ t: 40, r: 20 }}
-        }});
+        # Build release markers (shapes and annotations) for this repo
+        repo_releases = releases.get(repo, [])
+        shapes = []
+        annotations = []
 
-        Plotly.newPlot('clones-{safe_id}', {json.dumps(clones_trace)}, {{
-            title: 'Daily Clones',
-            xaxis: {{ title: 'Date' }},
-            yaxis: {{ title: 'Unique Clones' }},
-            margin: {{ t: 40, r: 20 }}
-        }});
+        for release in repo_releases:
+            release_date = release.published_at
+            # Only show releases within the data range
+            if min_date and max_date and min_date <= release_date <= max_date:
+                date_str = release_date.isoformat()
+                # Vertical line shape
+                shapes.append(
+                    {
+                        "type": "line",
+                        "x0": date_str,
+                        "x1": date_str,
+                        "y0": 0,
+                        "y1": 1,
+                        "yref": "paper",
+                        "line": {"color": "#888", "width": 1, "dash": "dash"},
+                    }
+                )
+                # Annotation at top
+                annotations.append(
+                    {
+                        "x": date_str,
+                        "y": 1,
+                        "yref": "paper",
+                        "text": release.tag_name,
+                        "showarrow": False,
+                        "font": {"size": 10, "color": "#666"},
+                        "yanchor": "bottom",
+                        "textangle": -45,
+                    }
+                )
+
+        views_layout = {
+            "title": "Daily Views",
+            "xaxis": {"title": "Date"},
+            "yaxis": {"title": "Unique Views"},
+            "margin": {"t": 40, "r": 20},
+            "shapes": shapes,
+            "annotations": annotations,
+        }
+
+        clones_layout = {
+            "title": "Daily Clones",
+            "xaxis": {"title": "Date"},
+            "yaxis": {"title": "Unique Clones"},
+            "margin": {"t": 40, "r": 20},
+            "shapes": shapes,
+            "annotations": annotations,
+        }
+
+        charts_js += f"""
+        Plotly.newPlot('views-{safe_id}', {json.dumps(views_trace)}, {json.dumps(views_layout)});
+
+        Plotly.newPlot('clones-{safe_id}', {json.dumps(clones_trace)}, {json.dumps(clones_layout)});
         """
 
     html = f"""<!DOCTYPE html>

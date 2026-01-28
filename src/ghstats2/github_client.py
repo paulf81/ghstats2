@@ -6,7 +6,7 @@ from typing import Self
 
 import httpx
 
-from ghstats2.models import RepoStats, TrafficData
+from ghstats2.models import Release, RepoStats, TrafficData
 
 
 class GitHubAPIError(Exception):
@@ -194,3 +194,31 @@ class GitHubTrafficClient:
             watchers_count=data.get("watchers_count", 0),
             open_issues_count=data.get("open_issues_count", 0),
         )
+
+    async def get_releases(self, owner: str, repo: str, per_page: int = 100) -> list[Release]:
+        """Fetch releases for a repository.
+
+        Args:
+            owner: Repository owner/organization.
+            repo: Repository name.
+            per_page: Number of releases to fetch (max 100).
+
+        Returns:
+            List of Release objects sorted by date (newest first).
+        """
+        from datetime import date
+
+        data = await self._request("GET", f"/repos/{owner}/{repo}/releases?per_page={per_page}")
+        releases = []
+        for item in data:
+            published = item.get("published_at")
+            if published:
+                published_date = date.fromisoformat(published[:10])
+                releases.append(
+                    Release(
+                        tag_name=item.get("tag_name", ""),
+                        published_at=published_date,
+                        name=item.get("name") or "",
+                    )
+                )
+        return releases
