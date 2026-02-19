@@ -8,6 +8,140 @@ import polars as pl
 from ghstats2.models import Release
 
 
+def _build_charts(
+    df: pl.DataFrame,
+    repos: list[str],
+    suffix: str,
+    title_prefix: str,
+    releases: dict[str, list[Release]],
+    min_date: pl.Date | None,
+    max_date: pl.Date | None,
+) -> tuple[str, str]:
+    """Build chart HTML containers and JavaScript for a dataset.
+
+    Args:
+        df: DataFrame with date, repo_name, views_unique, clones_unique columns.
+        repos: List of repository names.
+        suffix: Suffix for element IDs (e.g., "daily", "weekly", "monthly").
+        title_prefix: Prefix for chart titles (e.g., "Daily", "Weekly", "Monthly").
+        releases: Dict mapping repo_name to list of Release objects.
+        min_date: Minimum date for release filtering.
+        max_date: Maximum date for release filtering.
+
+    Returns:
+        Tuple of (charts_html, charts_js).
+    """
+    import json
+
+    charts_html = ""
+    charts_js = ""
+
+    for repo in repos:
+        safe_id = repo.replace("-", "_").replace(".", "_")
+        charts_html += f"""
+        <div class="repo-charts">
+            <h2 class="repo-title">{repo}</h2>
+            <div class="charts-row">
+                <div class="chart-container">
+                    <div id="views-{safe_id}-{suffix}" class="chart"></div>
+                </div>
+                <div class="chart-container">
+                    <div id="clones-{safe_id}-{suffix}" class="chart"></div>
+                </div>
+            </div>
+        </div>
+        """
+
+        repo_df = df.filter(pl.col("repo_name") == repo).sort("date")
+        dates = repo_df["date"].cast(pl.Utf8).to_list()
+        views_unique = repo_df["views_unique"].fill_null(0).to_list()
+        clones_unique = repo_df["clones_unique"].fill_null(0).to_list()
+
+        views_trace = [
+            {
+                "x": dates,
+                "y": views_unique,
+                "type": "scatter",
+                "mode": "lines+markers",
+                "name": "Unique Views",
+                "line": {"color": "#636EFA"},
+            }
+        ]
+
+        clones_trace = [
+            {
+                "x": dates,
+                "y": clones_unique,
+                "type": "scatter",
+                "mode": "lines+markers",
+                "name": "Unique Clones",
+                "line": {"color": "#EF553B"},
+            }
+        ]
+
+        # Build release markers (shapes and annotations) for this repo
+        repo_releases = releases.get(repo, [])
+        shapes = []
+        annotations = []
+
+        for release in repo_releases:
+            release_date = release.published_at
+            if min_date and max_date and min_date <= release_date <= max_date:
+                date_str = release_date.isoformat()
+                shapes.append(
+                    {
+                        "type": "line",
+                        "x0": date_str,
+                        "x1": date_str,
+                        "y0": 0,
+                        "y1": 1,
+                        "yref": "paper",
+                        "line": {"color": "#888", "width": 1, "dash": "dash"},
+                    }
+                )
+                annotations.append(
+                    {
+                        "x": date_str,
+                        "y": 1,
+                        "yref": "paper",
+                        "text": release.tag_name,
+                        "showarrow": False,
+                        "font": {"size": 10, "color": "#666"},
+                        "yanchor": "bottom",
+                        "textangle": -45,
+                    }
+                )
+
+        views_layout = {
+            "title": f"{title_prefix} Views",
+            "xaxis": {"title": "Date"},
+            "yaxis": {"title": "Unique Views"},
+            "margin": {"t": 40, "r": 20},
+            "shapes": shapes,
+            "annotations": annotations,
+        }
+
+        clones_layout = {
+            "title": f"{title_prefix} Clones",
+            "xaxis": {"title": "Date"},
+            "yaxis": {"title": "Unique Clones"},
+            "margin": {"t": 40, "r": 20},
+            "shapes": shapes,
+            "annotations": annotations,
+        }
+
+        views_trace_json = json.dumps(views_trace)
+        views_layout_json = json.dumps(views_layout)
+        clones_trace_json = json.dumps(clones_trace)
+        clones_layout_json = json.dumps(clones_layout)
+        charts_js += f"""
+        Plotly.newPlot('views-{safe_id}-{suffix}', {views_trace_json}, {views_layout_json});
+        Plotly.newPlot('clones-{safe_id}-{suffix}', {clones_trace_json}, {clones_layout_json});
+        """
+
+    return charts_html, charts_js
+
+
 def generate_dashboard(
     df: pl.DataFrame,
     output_path: str | Path,
@@ -20,8 +154,6 @@ def generate_dashboard(
         output_path: Path to write HTML file.
         releases: Optional dict mapping repo_name to list of Release objects.
     """
-    import json
-
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -79,114 +211,40 @@ def generate_dashboard(
         </div>
         """
 
-    # Build per-repo chart containers
-    charts_html = ""
-    for repo in repos:
-        safe_id = repo.replace("-", "_").replace(".", "_")
-        charts_html += f"""
-        <div class="repo-charts">
-            <h2 class="repo-title">{repo}</h2>
-            <div class="charts-row">
-                <div class="chart-container">
-                    <div id="views-{safe_id}" class="chart"></div>
-                </div>
-                <div class="chart-container">
-                    <div id="clones-{safe_id}" class="chart"></div>
-                </div>
-            </div>
-        </div>
-        """
+    # Build daily charts
+    daily_charts_html, daily_charts_js = _build_charts(
+        df, repos, "daily", "Daily", releases, min_date, max_date
+    )
 
-    # Build per-repo chart JavaScript
-    charts_js = ""
-    for repo in repos:
-        safe_id = repo.replace("-", "_").replace(".", "_")
-        repo_df = df.filter(pl.col("repo_name") == repo).sort("date")
-        dates = repo_df["date"].cast(pl.Utf8).to_list()
-        views_unique = repo_df["views_unique"].fill_null(0).to_list()
-        clones_unique = repo_df["clones_unique"].fill_null(0).to_list()
+    # Build weekly aggregated data and charts
+    weekly_df = (
+        df.with_columns(pl.col("date").dt.truncate("1w").alias("date"))
+        .group_by(["date", "repo_name"])
+        .agg(
+            [
+                pl.col("views_unique").sum(),
+                pl.col("clones_unique").sum(),
+            ]
+        )
+    )
+    weekly_charts_html, weekly_charts_js = _build_charts(
+        weekly_df, repos, "weekly", "Weekly", releases, min_date, max_date
+    )
 
-        views_trace = [
-            {
-                "x": dates,
-                "y": views_unique,
-                "type": "scatter",
-                "mode": "lines+markers",
-                "name": "Unique Views",
-                "line": {"color": "#636EFA"},
-            }
-        ]
-
-        clones_trace = [
-            {
-                "x": dates,
-                "y": clones_unique,
-                "type": "scatter",
-                "mode": "lines+markers",
-                "name": "Unique Clones",
-                "line": {"color": "#EF553B"},
-            }
-        ]
-
-        # Build release markers (shapes and annotations) for this repo
-        repo_releases = releases.get(repo, [])
-        shapes = []
-        annotations = []
-
-        for release in repo_releases:
-            release_date = release.published_at
-            # Only show releases within the data range
-            if min_date and max_date and min_date <= release_date <= max_date:
-                date_str = release_date.isoformat()
-                # Vertical line shape
-                shapes.append(
-                    {
-                        "type": "line",
-                        "x0": date_str,
-                        "x1": date_str,
-                        "y0": 0,
-                        "y1": 1,
-                        "yref": "paper",
-                        "line": {"color": "#888", "width": 1, "dash": "dash"},
-                    }
-                )
-                # Annotation at top
-                annotations.append(
-                    {
-                        "x": date_str,
-                        "y": 1,
-                        "yref": "paper",
-                        "text": release.tag_name,
-                        "showarrow": False,
-                        "font": {"size": 10, "color": "#666"},
-                        "yanchor": "bottom",
-                        "textangle": -45,
-                    }
-                )
-
-        views_layout = {
-            "title": "Daily Views",
-            "xaxis": {"title": "Date"},
-            "yaxis": {"title": "Unique Views"},
-            "margin": {"t": 40, "r": 20},
-            "shapes": shapes,
-            "annotations": annotations,
-        }
-
-        clones_layout = {
-            "title": "Daily Clones",
-            "xaxis": {"title": "Date"},
-            "yaxis": {"title": "Unique Clones"},
-            "margin": {"t": 40, "r": 20},
-            "shapes": shapes,
-            "annotations": annotations,
-        }
-
-        charts_js += f"""
-        Plotly.newPlot('views-{safe_id}', {json.dumps(views_trace)}, {json.dumps(views_layout)});
-
-        Plotly.newPlot('clones-{safe_id}', {json.dumps(clones_trace)}, {json.dumps(clones_layout)});
-        """
+    # Build monthly aggregated data and charts
+    monthly_df = (
+        df.with_columns(pl.col("date").dt.truncate("1mo").alias("date"))
+        .group_by(["date", "repo_name"])
+        .agg(
+            [
+                pl.col("views_unique").sum(),
+                pl.col("clones_unique").sum(),
+            ]
+        )
+    )
+    monthly_charts_html, monthly_charts_js = _build_charts(
+        monthly_df, repos, "monthly", "Monthly", releases, min_date, max_date
+    )
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -284,12 +342,22 @@ def generate_dashboard(
 
     {cards_html}
 
-    <h1 style="margin-top: 40px; color: #333;">Time Series</h1>
+    <h1 style="margin-top: 40px; color: #333;">Daily Totals</h1>
 
-    {charts_html}
+    {daily_charts_html}
+
+    <h1 style="margin-top: 40px; color: #333;">Weekly Totals</h1>
+
+    {weekly_charts_html}
+
+    <h1 style="margin-top: 40px; color: #333;">Monthly Totals</h1>
+
+    {monthly_charts_html}
 
     <script>
-        {charts_js}
+        {daily_charts_js}
+        {weekly_charts_js}
+        {monthly_charts_js}
     </script>
 </body>
 </html>
