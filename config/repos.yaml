@@ -10,3 +10,4 @@ repos:
   - name: hercules
   - name: hycon
   - name: ROSCO
+  - name: herc_analysis
